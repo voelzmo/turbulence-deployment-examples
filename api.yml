@@ -62,8 +62,8 @@ instance_groups:
         user: postgres
         password: postgres-password
         database: bosh
-        additional_databases: [uaa]
         adapter: postgres
+
       openstack: &openstack
         auth_url: <redacted>
         project: <redacted>
@@ -80,8 +80,8 @@ instance_groups:
             -----END CERTIFICATE-----
       agent: {mbus: "nats://nats:nats-password@192.168.1.12:4222"}
       registry:
-        address: 192.168.1.12 # <--- Replace with a private IP
-        host: 192.168.1.12 # <--- Replace with a private IP
+        address: 192.168.1.12
+        host: 192.168.1.12
         db: *db
         http: {user: admin, password: admin, port: 25777}
         username: admin
@@ -90,7 +90,7 @@ instance_groups:
         endpoint: http://admin:admin@192.168.1.12:25777
 
       blobstore:
-        address: 192.168.1.12 # <--- Replace with a private IP
+        address: 192.168.1.12
         port: 25250
         provider: dav
         director: {user: director, password: director-password}
