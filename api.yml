@@ -1,0 +1,112 @@
+---
+name: turbulence
+director_uuid: <%= `bosh status --uuid`  %>
+
+releases:
+- name: turbulence
+  version: latest
+- name: bosh-openstack-cpi
+  version: latest
+
+stemcells:
+- alias: default
+  os: ubuntu-trusty
+  version: latest
+
+instance_groups:
+- name: api
+  instances: 1
+  azs: [z1]
+  jobs:
+  - name: turbulence_api
+    release: turbulence
+    provides:
+      api: {shared: true}
+    properties:
+      password: p
+      certificate: |
+        -----BEGIN CERTIFICATE-----
+        MIIDETCCAfmgAwIBAgIJALunuMvRXPfSMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+        ...
+        -----END CERTIFICATE-----
+      private_key: |
+        -----BEGIN RSA PRIVATE KEY-----
+        MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC5O8rudqo7INji
+        ...
+        -----END RSA PRIVATE KEY-----
+      ca_cert: |
+        -----BEGIN CERTIFICATE-----
+        MIIDXzCCAkegAwIBAgIJAKOHgqtRSUbXMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+        ...
+        -----END CERTIFICATE-----
+
+      director:
+        host: 172.18.x.y
+        port: 25555
+        ca_cert: |
+          -----BEGIN CERTIFICATE-----
+          MIIDXzCCAkegAwIBAgIJAKOHgqtRSUbXMA0GCSqGSIb3DQEBCwUAMEUxCzAJBgNV
+          ...
+          -----END CERTIFICATE-----
+        username: turbulence
+        password: p
+
+      cpi_job_name: openstack_cpi
+
+  - name: openstack_cpi
+    release: bosh-openstack-cpi
+    properties:
+      postgres: &db
+        listen_address: 127.0.0.1
+        host: 127.0.0.1
+        user: postgres
+        password: postgres-password
+        database: bosh
+        additional_databases: [uaa]
+        adapter: postgres
+      openstack: &openstack
+        auth_url: <redacted>
+        project: <redacted>
+        domain: <redacted>
+        username: <redacted>
+        api_key: <redacted>
+        default_key_name: bosh
+        default_security_groups: [default]
+        connection_options:
+          ca_cert: |
+            -----BEGIN CERTIFICATE-----
+            MIIGTDCCBDSgAwIBAgIQXQPZPTFhXY9Iizlwx48bmTANBgkqhkiG9w0BAQsFADBO
+            ...
+            -----END CERTIFICATE-----
+      agent: {mbus: "nats://nats:nats-password@192.168.1.12:4222"}
+      registry:
+        address: 192.168.1.12 # <--- Replace with a private IP
+        host: 192.168.1.12 # <--- Replace with a private IP
+        db: *db
+        http: {user: admin, password: admin, port: 25777}
+        username: admin
+        password: admin
+        port: 25777
+        endpoint: http://admin:admin@192.168.1.12:25777
+
+      blobstore:
+        address: 192.168.1.12 # <--- Replace with a private IP
+        port: 25250
+        provider: dav
+        director: {user: director, password: director-password}
+        agent: {user: agent, password: agent-password}
+
+  vm_type: default
+  stemcell: default
+  networks:
+  - name: default
+    default: [dns, gateway]
+    static_ips: [192.168.0.13]
+  - name: vip
+    static_ips: [172.18.x.y]
+
+update:
+  canaries: 1
+  max_in_flight: 1
+  canary_watch_time: 5000-20000
+  update_watch_time: 5000-20000
